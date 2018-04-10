@@ -69,7 +69,7 @@
 
 // DEPRECATED: Will be removed from v1.4+.
 #if defined(ASMJIT_EMBED)
-  #pragma message("'ASMJIT_EMBED' is deprecated, use 'ASMJIT_BUILD_EMBED'")
+  //#pragma message("'ASMJIT_EMBED' is deprecated, use 'ASMJIT_BUILD_EMBED'")
   #define ASMJIT_BUILD_EMBED
 #endif
 

@@ -15,6 +15,8 @@
 #include "../core/builder.h"
 #include "../core/logging.h"
 
+#include <string>
+
 ASMJIT_BEGIN_NAMESPACE
 
 // ============================================================================
@@ -125,6 +127,20 @@ CommentNode* BaseBuilder::newCommentNode(const char* data, size_t size) noexcept
   }
 
   return newNodeT<CommentNode>(data);
+}
+
+RawWriteNode* BaseBuilder::newRawWriteNode(const char* data, size_t size) noexcept {
+  if (data) {
+    if (size == Globals::kNullTerminated)
+      size = std::strlen(data);
+
+    if (size > 0) {
+      data = static_cast<char*>(_dataZone.dup(data, size, true));
+      if (!data) return nullptr;
+    }
+  }
+
+  return newNodeT<RawWriteNode>(data);
 }
 
 InstNode* BaseBuilder::newInstNode(uint32_t instId, uint32_t instOptions, const Operand_& o0) noexcept {
@@ -411,7 +427,10 @@ Label BaseBuilder::newLabel() {
 }
 
 Label BaseBuilder::newNamedLabel(const char* name, size_t nameSize, uint32_t type, uint32_t parentId) {
-  uint32_t id = 0;
+  // TODO: Why the fuck is this code ???
+  static uint32_t labelNum = 0;
+  uint32_t id = labelNum++;
+
   if (_code) {
     LabelNode* node = newNodeT<LabelNode>(id);
     if (ASMJIT_UNLIKELY(!node)) {
@@ -425,7 +444,7 @@ Label BaseBuilder::newNamedLabel(const char* name, size_t nameSize, uint32_t typ
         id = node->id();
     }
   }
-  return Label(id);
+  return Label(Operand::packId(id));
 }
 
 Error BaseBuilder::bind(const Label& label) {
@@ -750,6 +769,34 @@ Error BaseBuilder::comment(const char* data, size_t size) {
 
   addNode(node);
   return kErrorOk;
+}
+
+// ============================================================================
+// [asmjit::BaseBuilder - Comment]
+// ============================================================================
+
+Error BaseBuilder::write(const char* data, size_t size) {
+  if (ASMJIT_UNLIKELY(!_code))
+    return DebugUtils::errored(kErrorNotInitialized);
+
+  RawWriteNode* node = newRawWriteNode(data, size);
+  if (ASMJIT_UNLIKELY(!node))
+    return reportError(DebugUtils::errored(kErrorNoHeapMemory));
+
+  addNode(node);
+  return kErrorOk;
+}
+
+Error BaseBuilder::writef(const char* fmt, ...) {
+  std::va_list ap;
+
+  va_start(ap, fmt);
+  StringBuilder sb;
+  sb.appendFormatVA(fmt, ap);
+  va_end(ap);
+
+  std::string str = sb.data();
+  return write(str.c_str());
 }
 
 // ============================================================================

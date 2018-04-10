@@ -35,6 +35,7 @@ class AlignNode;
 class EmbedDataNode;
 class LabelDataNode;
 class ConstPoolNode;
+class RawWriteNode;
 class CommentNode;
 class SentinelNode;
 class Pass;
@@ -91,6 +92,8 @@ public:
   ASMJIT_API EmbedDataNode* newEmbedDataNode(const void* data, uint32_t size) noexcept;
   //! Create a new `ConstPoolNode`.
   ASMJIT_API ConstPoolNode* newConstPoolNode() noexcept;
+  //! Create a new `RawWriteNode`.
+  ASMJIT_API RawWriteNode* newRawWriteNode(const char* data, size_t size) noexcept;
   //! Create a new `CommentNode`.
   ASMJIT_API CommentNode* newCommentNode(const char* data, size_t size) noexcept;
 
@@ -206,6 +209,13 @@ public:
   ASMJIT_API Error comment(const char* data, size_t size = Globals::kNullTerminated) override;
 
   // --------------------------------------------------------------------------
+  // [Write]
+  // --------------------------------------------------------------------------
+
+  ASMJIT_API Error write(const char* data, size_t size = Globals::kNullTerminated);
+  ASMJIT_API Error writef(const char* fmt, ...);
+
+  // --------------------------------------------------------------------------
   // [Serialize]
   // --------------------------------------------------------------------------
 
@@ -289,7 +299,9 @@ public:
     kNodeFuncCall   = 18,                //!< Node is `FuncCallNode` (acts as InstNode).
 
     // [UserDefined]
-    kNodeUser       = 32                 //!< First id of a user-defined node.
+    kNodeRawWrite   = 32,                //!< Custom node to output a raw string in dump
+    kNodeUser       = 33                 //!< First id of a user-defined node.
+
   };
 
   //! Node flags, specify what the node is and/or does.
@@ -897,6 +909,27 @@ public:
   //! Create a new `CommentNode` instance.
   inline CommentNode(BaseBuilder* cb, const char* comment) noexcept
     : BaseNode(cb, kNodeComment, kFlagIsInformative | kFlagHasNoEffect | kFlagIsRemovable) {
+    _inlineComment = comment;
+  }
+};
+
+// ============================================================================
+// [asmjit::RawWriteNode]
+// ============================================================================
+
+//! RawWriteNode node.
+class RawWriteNode : public BaseNode {
+public:
+  ASMJIT_NONCOPYABLE(RawWriteNode)
+
+    // --------------------------------------------------------------------------
+    // [Construction / Destruction]
+    // --------------------------------------------------------------------------
+
+    //! Create a new `RawWriteNode` instance.
+    inline RawWriteNode(BaseBuilder* cb, const char* comment) noexcept
+    : BaseNode(cb, kNodeRawWrite, 0) {
+
     _inlineComment = comment;
   }
 };

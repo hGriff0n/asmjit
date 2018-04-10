@@ -444,6 +444,12 @@ Error Logging::formatNode(
     }
     #endif
 
+    case BaseNode::kNodeRawWrite: {
+      const RawWriteNode* node = node_->as<RawWriteNode>();
+      ASMJIT_PROPAGATE(sb.appendString(node->inlineComment()));
+      break;
+    }
+
     default: {
       ASMJIT_PROPAGATE(sb.appendFormat("[User:%u]", node_->type()));
       break;
