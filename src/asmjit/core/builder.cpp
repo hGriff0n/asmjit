@@ -409,7 +409,9 @@ Error BaseBuilder::registerLabelNode(LabelNode* node) noexcept {
 }
 
 Label BaseBuilder::newLabel() {
-  uint32_t id = 0;
+  // TODO: This code isn't thread-safe
+  uint32_t id = _labelNodes.size();
+
   if (_code) {
     LabelNode* node = newNodeT<LabelNode>(id);
     if (ASMJIT_UNLIKELY(!node)) {
@@ -427,9 +429,7 @@ Label BaseBuilder::newLabel() {
 }
 
 Label BaseBuilder::newNamedLabel(const char* name, size_t nameSize, uint32_t type, uint32_t parentId) {
-  // TODO: Why the fuck is this code ???
-  static uint32_t labelNum = 0;
-  uint32_t id = labelNum++;
+  uint32_t id = _labelNodes.size();
 
   if (_code) {
     LabelNode* node = newNodeT<LabelNode>(id);
@@ -444,7 +444,9 @@ Label BaseBuilder::newNamedLabel(const char* name, size_t nameSize, uint32_t typ
         id = node->id();
     }
   }
-  return Label(Operand::packId(id));
+
+  auto packed = Operand::packId(id);
+  return Label(packed);
 }
 
 Error BaseBuilder::bind(const Label& label) {
